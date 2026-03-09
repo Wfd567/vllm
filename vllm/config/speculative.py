@@ -53,6 +53,7 @@ SpeculativeMethod = Literal[
     "mlp_speculator",
     "draft_model",
     "suffix",
+    "ssd",
     EagleModelTypes,
 ]
 
@@ -164,6 +165,27 @@ class SpeculativeConfig:
     """The minimum token probability for suffix decoding. Will only speculate
     tokens with estimated probability (based on frequency counts) greater than
     or equal to this value."""
+
+    # SSD (Speculative Speculative Decoding) configuration
+    ssd_async: bool = False
+    """Whether to use asynchronous SSD mode. In async mode, the draft model
+    runs on a separate device/process and speculates in parallel with verification."""
+    
+    ssd_async_fan_out: int = 3
+    """The fan-out factor for async SSD. Controls how many verification outcomes
+    are predicted and speculated in advance."""
+    
+    ssd_fan_out_list: list[int] | None = None
+    """Custom fan-out list per speculation depth for SSD."""
+    
+    ssd_jit_speculate: bool = False
+    """Whether to use JIT speculation for SSD cache misses."""
+    
+    ssd_sampler_x: float | None = None
+    """Sampler X parameter for SSD verification."""
+    
+    ssd_max_cached_sequences: int = 10000
+    """Maximum number of sequences to cache in SSD's tree cache."""
 
     draft_load_config: LoadConfig | None = None
     """Load config for the draft model. If not specified, will use the load
@@ -499,7 +521,7 @@ class SpeculativeConfig:
                             "one layer. Might need some code changes "
                             "to support multiple layers."
                         )
-                elif self.method == "draft_model":
+                elif self.method == "draft_model" or self.method == "ssd":
                     pass
                 else:
                     raise NotImplementedError(
